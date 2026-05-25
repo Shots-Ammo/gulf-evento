@@ -110,7 +110,7 @@ export default function Footer({ isArabic }: FooterProps) {
           © {currentYear} Gulf Evento Contracting Company. All rights reserved.
         </span>
         <span className="flex items-center gap-1.5 uppercase font-medium tracking-widest text-[9px] text-charcoal/60">
-          {isArabic ? "مدعوم ومحمي بواسطة MXO" : "Powered & Secured by MXO"}
+          {isArabic ? "مدعوم ومحمي بواسطة MXO" : <a href="https://otomax.tech" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Powered by Otomax</a>}
         </span>
       </div>
     </footer>

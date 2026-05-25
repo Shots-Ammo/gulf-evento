@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Phone } from "lucide-react";
+import { Menu, X, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -106,24 +106,64 @@ export default function Navbar({ isArabic, setIsArabic }: NavbarProps) {
               {isArabic ? "اتصل" : "Call Now"}
             </a>
 
-            {/* Language switch */}
+            {/* Language pill toggle */}
             <button
               onClick={() => setIsArabic(!isArabic)}
-              className="p-2 border border-accent/20 text-accent hover:border-primary hover:text-primary transition-all duration-300"
               aria-label="Toggle Language"
+              className="relative flex items-center h-8 rounded-full bg-charcoal/8 border border-charcoal/15 overflow-hidden cursor-pointer select-none shadow-inner"
+              style={{ width: "120px" }}
             >
-              <Globe size={16} />
+              {/* Sliding pill indicator */}
+              <motion.span
+                layout
+                animate={{ x: isArabic ? "50%" : "0%" }}
+                transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                className="absolute top-0.5 bottom-0.5 w-[50%] rounded-full bg-primary shadow-md z-10"
+              />
+              {/* English half */}
+              <span
+                className="relative z-20 flex-1 text-center text-[10px] font-heading font-bold tracking-wider uppercase transition-colors duration-300"
+                style={{ color: isArabic ? "var(--color-charcoal)" : "#FBFBFA" }}
+              >
+                English
+              </span>
+              {/* Arabic half */}
+              <span
+                className="relative z-20 flex-1 text-center text-[10px] font-heading font-bold tracking-wider transition-colors duration-300"
+                style={{ color: isArabic ? "#FBFBFA" : "var(--color-charcoal)" }}
+              >
+                عربي
+              </span>
             </button>
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-3">
+            {/* Mobile language pill toggle */}
             <button
               onClick={() => setIsArabic(!isArabic)}
-              className="p-1.5 border border-accent/20 text-accent transition-all duration-300"
               aria-label="Toggle Language"
+              className="relative flex items-center h-7 rounded-full bg-charcoal/8 border border-charcoal/15 overflow-hidden cursor-pointer select-none shadow-inner"
+              style={{ width: "104px" }}
             >
-              <Globe size={15} />
+              <motion.span
+                layout
+                animate={{ x: isArabic ? "50%" : "0%" }}
+                transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                className="absolute top-0.5 bottom-0.5 w-[50%] rounded-full bg-primary shadow-md z-10"
+              />
+              <span
+                className="relative z-20 flex-1 text-center text-[9px] font-heading font-bold tracking-wider uppercase transition-colors duration-300"
+                style={{ color: isArabic ? "var(--color-charcoal)" : "#FBFBFA" }}
+              >
+                English
+              </span>
+              <span
+                className="relative z-20 flex-1 text-center text-[9px] font-heading font-bold tracking-wider transition-colors duration-300"
+                style={{ color: isArabic ? "#FBFBFA" : "var(--color-charcoal)" }}
+              >
+                عربي
+              </span>
             </button>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

@@ -1,165 +1,200 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ArrowRight } from "lucide-react";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 interface HeroProps {
   isArabic: boolean;
 }
 
 export default function Hero({ isArabic }: HeroProps) {
-  const heroImages = ["/hero1.png", "/hero2.png", "/hero3.png"];
-  const [bgIndex, setBgIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const image1Ref = useRef<HTMLDivElement>(null);
+  const image3Ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % heroImages.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    const ctx = gsap.context(() => {
+      // 1. Initial Entrance Animation
+      const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+
+      // Set initial states to prevent jump/FOUC
+      gsap.set(".reveal-text", { yPercent: 100, opacity: 0 });
+      gsap.set(".hero-sub-content", { y: 20, opacity: 0 });
+      gsap.set(image1Ref.current, { x: isArabic ? -100 : 100, opacity: 0, scale: 0.8 });
+      gsap.set(image3Ref.current, { x: isArabic ? 100 : -100, opacity: 0, scale: 0.8 });
+
+      // Kinetic Typography reveal
+      tl.to(
+        ".reveal-text",
+        {
+          yPercent: 0,
+          opacity: 1,
+          duration: 1.5,
+          stagger: 0.2,
+          ease: "expo.out"
+        },
+        "-=0.8"
+      );
+
+      // Subtext and CTAs
+      tl.to(
+        ".hero-sub-content",
+        { opacity: 1, y: 0, duration: 1, stagger: 0.1 },
+        "-=1"
+      );
+
+      // Image Entrance - Sliding in from sides
+      tl.to(
+        image1Ref.current,
+        { x: 0, opacity: 1, scale: 1, duration: 1.5, ease: "expo.out" },
+        "-=1.2"
+      );
+
+      tl.to(
+        image3Ref.current,
+        { x: 0, opacity: 1, scale: 1, duration: 1.5, ease: "expo.out" },
+        "-=1.5"
+      );
+
+      // 2. Mouse-driven Parallax Effect
+      const handleMouseMove = (e: MouseEvent) => {
+        const { clientX, clientY } = e;
+        const xPos = (clientX / window.innerWidth) - 0.5;
+        const yPos = (clientY / window.innerHeight) - 0.5;
+
+        gsap.to(image1Ref.current, {
+          x: xPos * 30,
+          y: yPos * 30,
+          duration: 1,
+          ease: "power2.out",
+        });
+        gsap.to(image3Ref.current, {
+          x: -xPos * 50,
+          y: -yPos * 50,
+          duration: 1,
+          ease: "power2.out",
+        });
+        gsap.to(titleRef.current, {
+          x: xPos * 10,
+          duration: 1,
+          ease: "power2.out",
+        });
+      };
+
+      window.addEventListener("mousemove", handleMouseMove);
+
+      // 3. ScrollTrigger Parallax
+      gsap.to(image1Ref.current, {
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+        y: -150,
+        rotate: -5,
+      });
+
+      gsap.to(image3Ref.current, {
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+        y: 150,
+        rotate: 5,
+      });
+
+      return () => window.removeEventListener("mousemove", handleMouseMove);
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, [isArabic]);
 
   return (
     <section
+      ref={containerRef}
       id="home"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-cream select-none py-20"
+      className="relative min-h-screen w-full flex items-center overflow-hidden bg-cream select-none py-20"
       style={{ direction: isArabic ? "rtl" : "ltr" }}
     >
-      {/* Dynamic Background Image */}
-      <AnimatePresence>
-        <motion.div
-          key={bgIndex}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
-          className="absolute inset-0 z-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImages[bgIndex]})` }}
-        />
-      </AnimatePresence>
-      <div className="absolute inset-0 z-0 bg-cream/80" />
-
-      {/* Tilted Floating Monolith Elements in background */}
-      <motion.div
-        animate={{
-          y: [0, -15, 0],
-          rotate: [12, 14, 12],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="absolute right-[-10%] top-[10%] w-[350px] h-[600px] border border-accent/15 bg-accent/2 hidden lg:block rounded-3xl"
-        style={{ transform: "rotate(12deg)" }}
-      />
-      <motion.div
-        animate={{
-          y: [0, 15, 0],
-          rotate: [-20, -18, -20],
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="absolute left-[-5%] bottom-[-10%] w-[300px] h-[500px] border border-primary/20 bg-primary/2 hidden lg:block rounded-3xl"
-        style={{ transform: "rotate(-20deg)" }}
-      />
-
-      {/* Main Hero Container */}
-      <div className="max-w-5xl mx-auto px-6 z-10 text-center flex flex-col items-center">
-        {/* Established Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="hidden"
-        >
-          <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
-          <span className="text-[11px] font-heading font-medium tracking-widest text-accent uppercase">
-            {isArabic ? "تأسست في الجبيل عام ١٤٣٥ هـ" : "Established in Al Jubail • 1435 H"}
-          </span>
-        </motion.div>
-
-        {/* Headline */}
-        <h1 className="relative font-heading text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-charcoal mb-6 leading-tight max-w-4xl">
-          <motion.span
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="block"
-          >
-            {isArabic ? "صناعة التميز في" : "Crafting Excellence in"}
-          </motion.span>
-          <motion.span
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="block text-primary mt-2 font-extrabold tracking-wide"
-          >
-            {isArabic ? "المقاولات العامة والهندسة" : "General Contracting"}
-          </motion.span>
-        </h1>
-
-        {/* Paragraph Description */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="text-base sm:text-lg text-charcoal/70 max-w-2xl font-light mb-12 leading-relaxed tracking-wide"
-        >
-          {isArabic
-            ? "نحن نجسد الجيل الجديد من البناء الفاخر والهندسة الدقيقة في المملكة العربية السعودية. نقوم ببناء مشاريع متكاملة تصمد لأجيال متعاقبة."
-            : "Embodying the next generation of luxury architecture and precise engineering in Saudi Arabia. We deliver state-of-the-art developments engineered to endure."}
-        </motion.p>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full sm:w-auto"
-        >
-          {/* Main Button */}
-          <a
-            href="#contact"
-            className="group relative inline-flex items-center justify-center px-8 py-4 border border-primary bg-primary text-cream font-heading font-semibold text-sm tracking-widest uppercase transition-all duration-300 w-full sm:w-auto overflow-hidden hover:text-cream shadow-xl shadow-primary/10"
-          >
-            {/* Draw overlay */}
-            <span className="absolute inset-0 bg-accent scale-x-0 origin-left transition-transform duration-500 ease-out group-hover:scale-x-100" />
-            <span className="relative z-10 flex items-center gap-2">
-              {isArabic ? "خطط لمشروعك الآن" : "Plan Your Project"}
-              <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
-            </span>
-          </a>
-
-          {/* Secondary Button */}
-          <a
-            href="#services"
-            className="group inline-flex items-center justify-center px-8 py-4 border border-accent text-accent hover:border-primary hover:text-primary hover:bg-primary/5 font-heading font-semibold text-sm tracking-widest uppercase transition-all duration-300 w-full sm:w-auto"
-          >
-            {isArabic ? "استكشف خدماتنا" : "Explore Services"}
-          </a>
-        </motion.div>
+      {/* Background Elements: Grid-like structure */}
+      <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:100px_100px]" />
       </div>
 
-      {/* Downward Chevron Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 1 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 cursor-pointer z-10 text-charcoal/45 hover:text-primary transition-colors"
+      {/* Asymmetric Image Panels */}
+      <div
+        ref={image1Ref}
+        className="absolute z-10 w-full max-w-[450px] aspect-[3/4] overflow-hidden rounded-2xl shadow-2xl right-[-5%] top-[15%] hidden lg:block"
       >
-        <a href="#about" aria-label="Scroll Down">
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <ChevronDown size={28} />
-          </motion.div>
-        </a>
-      </motion.div>
+        <img
+          src="/1.jpg"
+          alt="Architectural Detail 1"
+          className="w-full h-full object-cover scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal/40 to-transparent" />
+      </div>
+
+      <div
+        ref={image3Ref}
+        className="absolute z-10 w-full max-w-[380px] aspect-square overflow-hidden rounded-full shadow-2xl left-[-5%] bottom-[10%] hidden lg:block border-[12px] border-white/10"
+      >
+        <img
+          src="/photonumber3.jpg"
+          alt="Architectural Detail 3"
+          className="w-full h-full object-cover scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-charcoal/40" />
+      </div>
+
+      {/* Main Content Container */}
+      <div className="relative z-20 max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+
+        {/* Left Side: Text Content */}
+        <div className="lg:col-span-8 flex flex-col items-start text-left" style={{ textAlign: isArabic ? 'right' : 'left' }}>
+
+          {/* Kinetic Typography Headline */}
+          <div ref={titleRef} className="relative mb-8">
+            <h1 className="font-heading text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter text-charcoal leading-[1.1]">
+              <span className="block overflow-hidden py-1">
+                <span className="reveal-text block translate-y-0 opacity-0">
+                  {isArabic ? "صناعة التميز في" : "Crafting Excellence"}
+                </span>
+              </span>
+              <span className="block overflow-hidden py-1">
+                <span className="reveal-text block text-primary font-extrabold translate-y-0 opacity-0">
+                  {isArabic ? "المقاولات العامة" : "General Contracting"}
+                </span>
+              </span>
+              <span className="block overflow-hidden py-1">
+                <span className="reveal-text block translate-y-0 opacity-0">
+                  {isArabic ? "والهندسة المعمارية" : "& Architecture"}
+                </span>
+              </span>
+            </h1>
+          </div>
+
+          {/* Description & Actions */}
+          <div className="flex flex-col items-start gap-8 max-w-xl">
+            <p className="hero-sub-content text-lg sm:text-xl text-charcoal/60 font-light leading-relaxed tracking-wide opacity-0">
+              {isArabic
+                ? "نحن نجسد الجيل الجديد من البناء الفاخر والهندسة الدقيقة في المملكة العربية السعودية. نقوم ببناء مشاريع متكاملة تصمد لأجيال متعاقبة."
+                : "Embodying the next generation of luxury architecture and precise engineering in Saudi Arabia. We deliver state-of-the-art developments engineered to endure."}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Empty for layout balance or supplementary elements */}
+        <div className="lg:col-span-4 hidden lg:block relative">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+        </div>
+      </div>
     </section>
   );
 }

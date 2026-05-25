@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Layers,
   Sparkles,
@@ -16,6 +17,9 @@ import {
   ArrowUpRight,
   LucideIcon,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+gsap.registerPlugin(ScrollTrigger);
 
 interface ServicesProps {
   isArabic: boolean;
@@ -30,15 +34,21 @@ interface ServiceItem {
   descAr: string;
   longDesc: string;
   longDescAr: string;
+  index: number;
 }
 
 export default function Services({ isArabic }: ServicesProps) {
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const servicesList: ServiceItem[] = [
     {
       id: "concrete",
       icon: Layers,
+      index: 0,
       title: "Concrete Structure",
       titleAr: "الهياكل الخرسانية",
       desc: "High-performance reinforced concrete structures engineered with rigorous precision, ensuring structural integrity that endures for generations.",
@@ -49,6 +59,7 @@ export default function Services({ isArabic }: ServicesProps) {
     {
       id: "finishing",
       icon: Sparkles,
+      index: 1,
       title: "Architectural Finishing",
       titleAr: "التشطيبات المعمارية",
       desc: "Meticulous interior and exterior craftsmanship. From bespoke plasterwork to fine stone cladding, we execute details that define luxury.",
@@ -59,6 +70,7 @@ export default function Services({ isArabic }: ServicesProps) {
     {
       id: "design",
       icon: Compass,
+      index: 2,
       title: "Architectural Design",
       titleAr: "التصميم المعماري",
       desc: "Visionary spatial planning. We translate conceptual dreams into high-performance architectural blueprints, harmonizing layout with majestic aesthetics.",
@@ -69,6 +81,7 @@ export default function Services({ isArabic }: ServicesProps) {
     {
       id: "firefighting",
       icon: Flame,
+      index: 3,
       title: "Fire Fighting Works",
       titleAr: "أنظمة مكافحة الحريق",
       desc: "Comprehensive fire suppression systems. We design and integrate state-of-the-art alarms and automated sprinklers to protect luxury assets.",
@@ -79,6 +92,7 @@ export default function Services({ isArabic }: ServicesProps) {
     {
       id: "plumbing",
       icon: Wrench,
+      index: 4,
       title: "Plumbing Infrastructure",
       titleAr: "أعمال السباكة والهيدروليك",
       desc: "Advanced hydraulic and fluid engineering. We implement pristine water distribution systems, industrial drainage, and premium sanitary infrastructure.",
@@ -89,6 +103,7 @@ export default function Services({ isArabic }: ServicesProps) {
     {
       id: "electrical",
       icon: Zap,
+      index: 5,
       title: "Electrical Networks",
       titleAr: "الشبكات والأنظمة الكهربائية",
       desc: "Sophisticated high-voltage power networks and smart automation. From custom illumination designs to automated building grids, we deliver efficiency.",
@@ -99,6 +114,7 @@ export default function Services({ isArabic }: ServicesProps) {
     {
       id: "ac",
       icon: Wind,
+      index: 6,
       title: "Central Air Conditioning",
       titleAr: "التكييف المركزي والتهوية",
       desc: "Advanced HVAC and climate engineering. Custom cooling systems designed to sustain whisper-quiet, pristine indoor climates in extreme desert conditions.",
@@ -108,159 +124,336 @@ export default function Services({ isArabic }: ServicesProps) {
     },
   ];
 
+  // GSAP Animations
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // 1. Clip-path text reveal on scroll
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: headerRef.current,
+          start: "top 80%",
+        },
+      });
+
+      tl.fromTo(
+        ".reveal-line",
+        { clipPath: "inset(0 100% 0 0)", opacity: 0 },
+        {
+          clipPath: "inset(0 0% 0 0)",
+          opacity: 1,
+          duration: 1.4,
+          stagger: 0.15,
+          ease: "expo.out",
+        }
+      );
+
+      // 2. Cards staggered entrance with 3D tilt
+      tl.fromTo(
+        ".service-card",
+        {
+          opacity: 0,
+          y: 80,
+          rotateX: -20,
+          scale: 0.92,
+          transformOrigin: "center bottom",
+        },
+        {
+          opacity: 1,
+          y: 0,
+          rotateX: 0,
+          scale: 1,
+          duration: 1.1,
+          stagger: {
+            amount: 0.9,
+            from: "start",
+          },
+          ease: "back.out(1.4)",
+        },
+        "-=0.6"
+      );
+
+      // 3. Floating ambient glows
+      gsap.to(".bg-glow-1", {
+        x: 60,
+        y: -40,
+        duration: 8,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+      gsap.to(".bg-glow-2", {
+        x: -50,
+        y: 60,
+        duration: 11,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        delay: 2,
+      });
+      gsap.to(".bg-glow-3", {
+        x: 40,
+        y: 30,
+        duration: 9,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        delay: 1,
+      });
+
+      // 4. Subtle magnetic parallax on mouse move
+      const handleMouseMove = (e: MouseEvent) => {
+        const { clientX, clientY } = e;
+        const { innerWidth, innerHeight } = window;
+        const xNorm = (clientX / innerWidth - 0.5) * 2;
+        const yNorm = (clientY / innerHeight - 0.5) * 2;
+
+        gsap.to(".parallax-grid", {
+          x: xNorm * 12,
+          y: yNorm * 12,
+          duration: 1.8,
+          ease: "power2.out",
+        });
+      };
+
+      window.addEventListener("mousemove", handleMouseMove);
+      return () => window.removeEventListener("mousemove", handleMouseMove);
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, [isArabic]);
+
   return (
     <section
+      ref={sectionRef}
       id="services"
-      className="py-24 sm:py-32 bg-cream text-charcoal relative overflow-hidden"
+      className="py-32 sm:py-48 bg-charcoal text-cream relative overflow-hidden"
       style={{ direction: isArabic ? "rtl" : "ltr" }}
     >
-      {/* Dynamic Background Grid and Lights */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <div className="absolute top-[10%] left-[20%] w-[400px] h-[400px] bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-[10%] right-[20%] w-[400px] h-[400px] bg-accent/15 rounded-full blur-3xl" />
+      {/* === Atmospheric Depth Layer === */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* Ambient glow orbs */}
+        <div className="bg-glow-1 absolute top-[5%] left-[-8%] w-[550px] h-[550px] bg-accent/20 rounded-full blur-[100px]" />
+        <div className="bg-glow-2 absolute bottom-[5%] right-[-8%] w-[500px] h-[500px] bg-primary/25 rounded-full blur-[120px]" />
+        <div className="bg-glow-3 absolute top-[50%] left-[40%] w-[400px] h-[400px] bg-accent/10 rounded-full blur-[80px]" />
+
+        {/* Subtle grid texture parallax layer */}
+        <div
+          className="parallax-grid absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(171,149,63,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(171,149,63,0.6) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        {/* Top edge gradient fade */}
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-charcoal/80 to-transparent" />
+        {/* Bottom edge gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-charcoal/80 to-transparent" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Section Header */}
-        <div className="flex flex-col items-center text-center mb-16 sm:mb-24">
-          <span className="text-[11px] font-heading font-semibold tracking-widest text-accent uppercase mb-3">
-            {isArabic ? "مستوى جديد من الهندسة" : "Unrivaled Technical Capability"}
+        {/* === Cinematic Header — Asymmetric === */}
+        <div
+          ref={headerRef}
+          className="flex flex-col items-start mb-24 relative"
+          style={{ textAlign: isArabic ? "right" : "left", alignItems: isArabic ? "flex-end" : "flex-start" }}
+        >
+          {/* Eyebrow label */}
+          <span className="reveal-line inline-block font-heading text-[10px] sm:text-xs font-bold tracking-[0.35em] text-accent uppercase mb-6 border border-accent/30 px-4 py-2 rounded-full">
+            {isArabic ? "ما نقدمه" : "What We Deliver"}
           </span>
-          <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight text-primary mb-6 leading-tight text-underline-gold max-w-3xl">
-            {isArabic
-              ? "خدماتنا في قطاع المقاولات العامة"
-              : "Our Architectural & Engineering Ledger"}
+
+          <h2 className="font-heading text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tighter text-cream leading-[1.05] max-w-3xl">
+            <span className="reveal-line block">
+              {isArabic ? "خدماتنا في قطاع" : "Our services in the"}
+            </span>
+            <span className="reveal-line block text-accent">
+              {isArabic ? "المقاولات العامة" : "general contracting sector"}
+            </span>
           </h2>
-          <p className="text-charcoal/70 max-w-xl font-light text-sm sm:text-base mt-2">
-            {isArabic
-              ? "تفوق إنشائي متكامل وهندسة دقيقة تغطي كافة مجالات البناء الحديث والأنظمة الكهروميكانيكية المتطورة."
-              : "A comprehensive ecosystem of precise construction and mechanical engineering tailored for elite structural developments."}
-          </p>
+
+          {/* Decorative counter pill — right-offset */}
+          <div className="reveal-line absolute top-0 right-0 hidden lg:flex flex-col items-center justify-center w-24 h-24 rounded-full border border-accent/20 bg-white/5 backdrop-blur-sm">
+            <span className="font-heading text-2xl font-extrabold text-accent">07</span>
+            <span className="font-heading text-[9px] uppercase tracking-widest text-cream/40">Services</span>
+          </div>
         </div>
 
-        {/* Services Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {servicesList.map((service, index) => {
+        {/* === The Service Grid === */}
+        <div
+          ref={gridRef}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 perspective-[1200px]"
+        >
+          {servicesList.map((service) => {
             const ServiceIcon = service.icon;
+            const isHovered = hoveredId === service.id;
+            // Staggered vertical offsets for asymmetric feel
+            const offsetClass =
+              service.index % 3 === 1
+                ? "md:translate-y-10"
+                : service.index % 3 === 2
+                ? "md:-translate-y-5"
+                : "";
+
             return (
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
                 key={service.id}
                 onClick={() => setSelectedService(service)}
-                className="group border border-accent/10 bg-white p-8 hover:border-primary hover:bg-primary/[0.03] hover:shadow-md transition-all duration-500 flex flex-col justify-between items-start min-h-[280px] cursor-pointer relative overflow-hidden rounded-2xl"
+                onHoverStart={() => setHoveredId(service.id)}
+                onHoverEnd={() => setHoveredId(null)}
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                className={`service-card group relative cursor-pointer overflow-hidden rounded-2xl border border-white/8 bg-white/5 backdrop-blur-sm ${offsetClass}`}
+                style={{ transformStyle: "preserve-3d" }}
               >
-                {/* Micro gold corner decor */}
-                <div className="absolute top-0 right-0 w-2 h-2 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                {/* Clip-path gold sweep on hover */}
+                <motion.div
+                  className="absolute inset-0 z-0 rounded-2xl"
+                  initial={{ clipPath: "inset(100% 0 0 0)" }}
+                  animate={{ clipPath: isHovered ? "inset(0% 0 0 0)" : "inset(100% 0 0 0)" }}
+                  transition={{ duration: 0.55, ease: [0.76, 0, 0.24, 1] }}
+                  style={{
+                    background: "linear-gradient(135deg, #AB953F 0%, #d4b96a 50%, #AB953F 100%)",
+                  }}
+                />
 
-                <div className="w-full">
-                  {/* Icon and Header */}
-                  <div className="flex justify-between items-center w-full mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500">
-                      <ServiceIcon size={22} className="group-hover:rotate-12 transition-transform duration-500" />
-                    </div>
-                    <ArrowUpRight
-                      size={18}
-                      className="text-accent/30 group-hover:text-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-all"
-                    />
+                {/* Hover border glow */}
+                <motion.div
+                  className="absolute inset-0 rounded-2xl z-0"
+                  animate={{
+                    boxShadow: isHovered
+                      ? "0 0 0 1.5px rgba(171,149,63,0.7), 0 25px 60px rgba(171,149,63,0.2)"
+                      : "0 0 0 1px rgba(255,255,255,0.06)",
+                  }}
+                  transition={{ duration: 0.4 }}
+                />
+
+                {/* Card inner content */}
+                <div className="relative z-10 flex flex-col h-full p-8 sm:p-10 min-h-[300px]">
+                  {/* Index label */}
+                  <div className="absolute top-5 right-5 font-heading text-[10px] font-bold uppercase tracking-widest text-white/20 group-hover:text-charcoal/40 transition-colors duration-500">
+                    S–0{service.index + 1}
+                  </div>
+
+                  {/* Icon */}
+                  <div className="w-14 h-14 rounded-xl border border-white/10 bg-white/5 group-hover:bg-charcoal/20 flex items-center justify-center text-accent group-hover:text-charcoal mb-8 transition-all duration-500 flex-shrink-0">
+                    <motion.div
+                      animate={{ rotate: isHovered ? 12 : 0, scale: isHovered ? 1.15 : 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      <ServiceIcon size={24} />
+                    </motion.div>
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-primary group-hover:text-accent transition-colors mb-3">
+                  <h3 className="font-heading text-xl sm:text-2xl font-bold text-cream group-hover:text-charcoal transition-colors duration-500 uppercase tracking-tight mb-3 leading-snug">
                     {isArabic ? service.titleAr : service.title}
                   </h3>
 
-                  {/* Short Description */}
-                  <p className="text-charcoal/70 font-light text-xs sm:text-sm leading-relaxed mb-4 line-clamp-3">
+                  {/* Description */}
+                  <p className="text-cream/55 group-hover:text-charcoal/80 font-light text-sm sm:text-base leading-relaxed mb-8 flex-1 transition-colors duration-500">
                     {isArabic ? service.descAr : service.desc}
                   </p>
-                </div>
 
-                <span className="text-[10px] font-heading font-semibold text-accent uppercase tracking-widest group-hover:underline mt-2">
-                  {isArabic ? "اقرأ المزيد ➔" : "Discover Details ➔"}
-                </span>
+                  {/* Footer CTA */}
+                  <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/10 group-hover:border-charcoal/20 transition-colors duration-500">
+                    <span className="text-[10px] font-heading font-bold text-accent group-hover:text-charcoal uppercase tracking-widest transition-colors duration-500">
+                      {isArabic ? "التفاصيل" : "View Details"}
+                    </span>
+                    <motion.div
+                      className="w-9 h-9 rounded-full border border-white/15 group-hover:border-charcoal/30 flex items-center justify-center text-cream/50 group-hover:text-charcoal transition-colors duration-500"
+                      animate={{ rotate: isHovered ? 45 : 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      <ArrowUpRight size={15} />
+                    </motion.div>
+                  </div>
+                </div>
               </motion.div>
             );
           })}
         </div>
       </div>
 
-      {/* Interactive Bottom Sheet (Mobile) & Side Modal (Desktop) */}
+      {/* === Detail Modal === */}
       <AnimatePresence>
         {selectedService && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-            {/* Backdrop Scrim */}
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedService(null)}
-              className="absolute inset-0 bg-charcoal/50 backdrop-blur-sm cursor-pointer"
+              className="absolute inset-0 bg-charcoal/75 backdrop-blur-md cursor-pointer"
             />
 
-            {/* Content Drawer Card */}
+            {/* Modal Panel */}
             <motion.div
-              initial={{ y: "100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg bg-white border-t sm:border border-accent/15 rounded-t-3xl sm:rounded-3xl p-8 sm:p-10 shadow-2xl flex flex-col justify-between max-h-[85vh] sm:max-h-[90vh] overflow-y-auto z-10"
+              initial={{ scale: 0.88, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.88, opacity: 0, y: 30 }}
+              transition={{ type: "spring", damping: 22, stiffness: 280 }}
+              className="relative w-full max-w-2xl bg-charcoal border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl z-10 overflow-hidden"
               style={{ direction: isArabic ? "rtl" : "ltr" }}
             >
-              {/* Close Button */}
+              {/* Modal glow orb */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-accent/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/15 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none" />
+
+              {/* Close button */}
               <button
                 onClick={() => setSelectedService(null)}
-                className="absolute top-6 right-6 p-2 rounded-full border border-charcoal/10 text-charcoal/60 hover:border-primary hover:text-primary transition-colors"
-                aria-label="Close details"
+                className="absolute top-6 right-6 p-2 rounded-full border border-white/10 text-white/50 hover:border-accent hover:text-accent transition-all duration-300"
               >
                 <X size={16} />
               </button>
 
-              {/* Service Details */}
-              <div className="flex flex-col gap-6 w-full text-charcoal">
-                {/* Header Badge */}
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  {selectedService && <selectedService.icon size={28} className="animate-pulse" />}
+              <div className="flex flex-col gap-8 relative z-10">
+                {/* Service header */}
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-2xl bg-accent/15 border border-accent/25 flex items-center justify-center text-accent flex-shrink-0">
+                    {selectedService && <selectedService.icon size={30} />}
+                  </div>
+                  <div>
+                    <h3 className="font-heading text-2xl sm:text-3xl font-bold text-cream uppercase tracking-tight">
+                      {isArabic ? selectedService.titleAr : selectedService.title}
+                    </h3>
+                    <span className="text-[10px] font-heading font-semibold tracking-widest text-accent uppercase">
+                      {isArabic ? "تفاصيل الخدمة" : "Service Intelligence"}
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <h3 className="font-heading text-xl sm:text-2xl font-bold text-primary mb-2 uppercase tracking-wide">
-                    {isArabic ? selectedService.titleAr : selectedService.title}
-                  </h3>
-                  <span className="text-[10px] font-heading font-medium tracking-widest text-accent uppercase">
-                    {isArabic ? "قطاع المقاولات والهندسة" : "Contracting & Engineering Domain"}
-                  </span>
-                </div>
-
-                <p className="text-charcoal/80 leading-relaxed font-light text-sm sm:text-base">
+                {/* Long description */}
+                <p className="text-cream/70 leading-relaxed font-light text-base sm:text-lg">
                   {isArabic ? selectedService.longDescAr : selectedService.longDesc}
                 </p>
-              </div>
 
-              {/* Instant Call Actions */}
-              <div className="flex flex-col gap-3 mt-8 w-full">
-                <a
-                  href={`https://wa.me/966507506633?text=${encodeURIComponent(
-                    isArabic
-                      ? `مرحباً جلف إيفينتو، أود الاستفسار عن خدماتكم في: ${selectedService.titleAr}`
-                      : `Hello Gulf Evento, I am interested in your services for: ${selectedService.title}`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-cream font-heading font-semibold text-xs tracking-wider uppercase py-3.5 transition-colors rounded-xl w-full"
-                >
-                  <MessageCircle size={15} />
-                  {isArabic ? "استفسار عبر واتساب" : "Inquire via WhatsApp"}
-                </a>
-                <a
-                  href="tel:0136647813"
-                  className="flex items-center justify-center gap-2 border border-accent text-accent hover:bg-accent hover:text-white font-heading font-semibold text-xs tracking-wider uppercase py-3.5 transition-all rounded-xl w-full"
-                >
-                  <Phone size={14} />
-                  {isArabic ? "اتصل بفرع الجبيل" : "Call Jubail Office"}
-                </a>
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                  <a
+                    href={`https://wa.me/966507506633?text=${encodeURIComponent(
+                      isArabic
+                        ? `مرحباً جلف إيفينتو، أود الاستفسار عن خدماتكم في: ${selectedService.titleAr}`
+                        : `Hello Gulf Evento, I am interested in your services for: ${selectedService.title}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-charcoal font-heading font-bold text-xs tracking-widest uppercase py-4 px-6 rounded-full transition-all duration-300 shadow-lg shadow-accent/20"
+                  >
+                    <MessageCircle size={16} />
+                    {isArabic ? "تواصل عبر واتساب" : "WhatsApp Inquiry"}
+                  </a>
+                  <a
+                    href="tel:0136647813"
+                    className="flex items-center justify-center gap-2 border border-white/20 text-cream hover:bg-white/10 font-heading font-bold text-xs tracking-widest uppercase py-4 px-6 rounded-full transition-all duration-300"
+                  >
+                    <Phone size={16} />
+                    {isArabic ? "اتصال مباشر" : "Direct Call"}
+                  </a>
+                </div>
               </div>
             </motion.div>
           </div>

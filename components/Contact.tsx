@@ -1,15 +1,65 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { Phone, MessageCircle, MapPin, Send, CheckCircle2, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Register ScrollTrigger
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 interface ContactProps {
   isArabic: boolean;
 }
 
 type FormStep = 1 | 2 | 3;
+
+// Magnetic Button Component
+const MagneticButton = ({ children, className, onClick, disabled, type = "button" }: any) => {
+  const ref = useRef<HTMLButtonElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x, { stiffness: 150, damping: 15, mass: 0.1 });
+  const mouseYSpring = useSpring(y, { stiffness: 150, damping: 15, mass: 0.1 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!ref.current || disabled) return;
+    const rect = ref.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left - width / 2;
+    const mouseY = e.clientY - rect.top - height / 2;
+    x.set(mouseX * 0.3); // Magnetic pull strength
+    y.set(mouseY * 0.3);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.button
+      ref={ref}
+      type={type}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      disabled={disabled}
+      style={{ x: mouseXSpring, y: mouseYSpring }}
+      whileHover={{ scale: disabled ? 1 : 1.05 }}
+      whileTap={{ scale: disabled ? 1 : 0.95 }}
+      className={className}
+    >
+      {children}
+    </motion.button>
+  );
+};
 
 export default function Contact({ isArabic }: ContactProps) {
   const [step, setStep] = useState<FormStep>(1);
@@ -19,6 +69,11 @@ export default function Contact({ isArabic }: ContactProps) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const contactCardsRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const services = [
     { id: "concrete", name: isArabic ? "الهياكل الخرسانية" : "Concrete Structures" },
@@ -33,6 +88,63 @@ export default function Contact({ isArabic }: ContactProps) {
     { id: "industrial", name: isArabic ? "مستودع / منشأة صناعية" : "Industrial Infrastructure" },
   ];
 
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Heading entrance (staggered lines/fade)
+      gsap.fromTo(
+        headerRef.current,
+        { y: 50, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1.2,
+          ease: "power4.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 75%",
+          },
+        }
+      );
+
+      // Contact cards stagger
+      if (contactCardsRef.current) {
+        gsap.fromTo(
+          contactCardsRef.current.children,
+          { y: 40, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.8,
+            stagger: 0.15,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: "top 65%",
+            },
+          }
+        );
+      }
+
+      // Form entrance (slide in depending on layout dir)
+      gsap.fromTo(
+        formRef.current,
+        { x: isArabic ? -50 : 50, opacity: 0 },
+        {
+          x: 0,
+          opacity: 1,
+          duration: 1.2,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 60%",
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, [isArabic]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email) return;
@@ -41,96 +153,127 @@ export default function Contact({ isArabic }: ContactProps) {
 
   const getWhatsAppURL = () => {
     const text = isArabic
-      ? `مرحباً شركة جلف إيفينتو، لقد قمت بتعبئة مخطط المشروع عبر الموقع للتواصل معي:
-الاسم: ${name}
-الهاتف: ${phone}
-نوع الخدمة: ${selectedService}
-حجم المشروع: ${projectScale}`
-      : `Hello Gulf Evento, I have completed your luxury project planner online:
-Name: ${name}
-Phone: ${phone}
-Service: ${selectedService}
-Scale: ${projectScale}`;
+      ? `مرحباً شركة جلف إيفينتو، لقد قمت بتعبئة مخطط المشروع عبر الموقع للتواصل معي:\nالاسم: ${name}\nالهاتف: ${phone}\nنوع الخدمة: ${selectedService}\nحجم المشروع: ${projectScale}`
+      : `Hello Gulf Evento, I have completed your luxury project planner online:\nName: ${name}\nPhone: ${phone}\nService: ${selectedService}\nScale: ${projectScale}`;
     return `https://wa.me/966507506633?text=${encodeURIComponent(text)}`;
+  };
+
+  // Framer Motion variants for form steps
+  const stepVariants = {
+    hidden: (direction: number) => ({
+      opacity: 0,
+      x: direction > 0 ? (isArabic ? -30 : 30) : (isArabic ? 30 : -30),
+      scale: 0.95
+    }),
+    visible: {
+      opacity: 1,
+      x: 0,
+      scale: 1,
+      transition: { duration: 0.5, type: "spring" as const, stiffness: 300, damping: 30 }
+    },
+    exit: (direction: number) => ({
+      opacity: 0,
+      x: direction < 0 ? (isArabic ? -30 : 30) : (isArabic ? 30 : -30),
+      scale: 0.95,
+      transition: { duration: 0.3 }
+    })
+  };
+
+  const [direction, setDirection] = useState(1);
+
+  const nextStep = () => {
+    setDirection(1);
+    setStep((s) => (s + 1) as FormStep);
+  };
+
+  const prevStep = () => {
+    setDirection(-1);
+    setStep((s) => (s - 1) as FormStep);
   };
 
   return (
     <section
       id="contact"
-      className="py-24 sm:py-32 bg-cream text-charcoal relative overflow-hidden"
+      ref={sectionRef}
+      className="py-32 bg-charcoal text-cream relative overflow-hidden"
       style={{ direction: isArabic ? "rtl" : "ltr" }}
     >
-      {/* Background Radial Light */}
-      <div className="absolute inset-0 z-0 opacity-15 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-3xl" />
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/30 rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-accent/20 rounded-full blur-[100px] mix-blend-screen" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-          {/* Left Column: Direct Inquiries / HQ Address */}
-          <div className="lg:col-span-5 flex flex-col items-start">
-            <span className="text-[11px] font-heading font-semibold tracking-widest text-accent uppercase mb-3">
-              {isArabic ? "تواصل مباشر ٢٤/٧" : "Direct Inquiries"}
-            </span>
-            <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight text-primary mb-8 leading-tight text-underline-gold">
-              {isArabic ? "اتصل بنا الآن" : "Connect with Us"}
-            </h2>
-            <p className="text-charcoal/70 font-light text-sm sm:text-base leading-relaxed mb-10 text-left">
-              {isArabic
-                ? "ابدأ مناقشة فخامة مشروعك القادم اليوم. تواصل معنا مباشرة عبر الهاتف أو البريد الإلكتروني أو تفضل بزيارة مكتبنا الرئيسي بمدينة الجبيل."
-                : "Initiate your premium architectural development today. Connect directly with our Jubail engineering headquarters via phone, messaging, or email."}
-            </p>
+        <div className="flex flex-col lg:flex-row gap-16 lg:gap-8 items-center">
+          
+          {/* Left Column: Asymmetrical typography & Direct Inquiries */}
+          <div className="lg:w-1/2 flex flex-col items-start pr-0 lg:pr-12">
+            <div ref={headerRef} className="mb-16">
+              <div className="overflow-hidden mb-4">
+                <span className="inline-block text-xs font-heading font-bold tracking-[0.2em] text-accent uppercase px-4 py-1.5 border border-accent/30 rounded-full">
+                  {isArabic ? "تواصل معنا" : "Direct Inquiries"}
+                </span>
+              </div>
+              <h2 className="font-heading text-5xl sm:text-7xl font-bold tracking-tight text-white mb-8 leading-[1.1]">
+                {isArabic ? "لنبني معاً" : "Let's Build"}
+                <br />
+                <span className="text-primary italic font-light">{isArabic ? "إرثاً لا يُنسى" : "Your Legacy."}</span>
+              </h2>
+              <p className="text-cream/70 font-light text-base sm:text-lg leading-relaxed max-w-lg">
+                {isArabic
+                  ? "ابدأ مناقشة فخامة مشروعك القادم اليوم. تواصل معنا مباشرة عبر الهاتف أو البريد الإلكتروني أو تفضل بزيارة مكتبنا الرئيسي بمدينة الجبيل."
+                  : "Initiate your premium architectural development today. Connect directly with our Jubail engineering headquarters via phone, messaging, or email."}
+              </p>
+            </div>
 
-            {/* Direct Details Grid */}
-            <div className="flex flex-col gap-6 w-full text-charcoal">
-              {/* HQ Phone */}
+            {/* Direct Details Grid - Modernized */}
+            <div ref={contactCardsRef} className="flex flex-col gap-4 w-full max-w-md">
               <a
                 href="tel:0136647813"
-                className="flex items-center gap-4 group p-4 border border-accent/10 hover:border-primary/40 bg-white transition-colors rounded-2xl w-full shadow-sm hover:shadow-md"
+                className="flex items-center gap-6 group p-5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 transition-all duration-300 backdrop-blur-sm rounded-3xl w-full"
               >
-                <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-all">
-                  <Phone size={16} />
+                <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500">
+                  <Phone size={24} />
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="text-[9px] font-heading font-semibold tracking-widest text-charcoal/50 uppercase">
+                  <span className="text-[10px] font-heading font-semibold tracking-widest text-cream/50 uppercase mb-1">
                     {isArabic ? "الهاتف الرئيسي للمكتب" : "Jubail Office Landline"}
                   </span>
-                  <span className="text-base font-bold text-charcoal group-hover:text-primary transition-colors">
+                  <span className="text-xl font-bold text-white group-hover:text-primary transition-colors">
                     013-6647813
                   </span>
                 </div>
               </a>
 
-              {/* Direct WhatsApp */}
               <a
                 href="https://wa.me/966507506633"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 group p-4 border border-accent/10 hover:border-emerald-500/40 bg-white transition-colors rounded-2xl w-full shadow-sm hover:shadow-md"
+                className="flex items-center gap-6 group p-5 bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm rounded-3xl w-full"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                  <MessageCircle size={16} />
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-500">
+                  <MessageCircle size={24} />
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="text-[9px] font-heading font-semibold tracking-widest text-charcoal/50 uppercase">
+                  <span className="text-[10px] font-heading font-semibold tracking-widest text-cream/50 uppercase mb-1">
                     {isArabic ? "محادثة مباشرة واتساب" : "Direct WhatsApp Liaison"}
                   </span>
-                  <span className="text-base font-bold text-charcoal group-hover:text-emerald-500 transition-colors">
+                  <span className="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">
                     +966 50 750 6633
                   </span>
                 </div>
               </a>
 
-              {/* HQ Location */}
-              <div className="flex items-center gap-4 p-4 border border-accent/10 bg-white rounded-2xl w-full shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
-                  <MapPin size={16} />
+              <div className="flex items-center gap-6 p-5 bg-white/5 border border-white/10 backdrop-blur-sm rounded-3xl w-full">
+                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-white shrink-0">
+                  <MapPin size={24} />
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="text-[9px] font-heading font-semibold tracking-widest text-charcoal/50 uppercase">
+                  <span className="text-[10px] font-heading font-semibold tracking-widest text-cream/50 uppercase mb-1">
                     {isArabic ? "المقر الرئيسي" : "Headquarters"}
                   </span>
-                  <span className="text-sm text-charcoal font-light">
+                  <span className="text-sm text-cream/90 font-light leading-relaxed">
                     {isArabic
                       ? "مدينة الجبيل، المنطقة الشرقية، المملكة العربية السعودية"
                       : "Al Jubail, Eastern Province, Saudi Arabia"}
@@ -140,204 +283,238 @@ Scale: ${projectScale}`;
             </div>
           </div>
 
-          {/* Right Column: Interactive Project Planner Form */}
-          <div className="lg:col-span-7 w-full">
-            <div className="bg-white border border-accent/10 rounded-3xl p-8 sm:p-12 shadow-md relative">
-              {/* Radial Light */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+          {/* Right Column: Floating Form Modal-Style */}
+          <div className="lg:w-1/2 w-full mt-12 lg:mt-0 relative z-20">
+            <div 
+              ref={formRef}
+              className="bg-white text-charcoal rounded-[2.5rem] p-8 sm:p-14 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative overflow-hidden lg:-ml-12"
+            >
+              {/* Form internal subtle gradient */}
+              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[80px] pointer-events-none" />
 
               <AnimatePresence mode="wait">
                 {!isSubmitted ? (
-                  <form onSubmit={handleSubmit} className="flex flex-col min-h-[380px] justify-between">
+                  <form onSubmit={handleSubmit} className="flex flex-col min-h-[420px] justify-between relative z-10">
                     <div>
-                      {/* Form Header Info */}
-                      <div className="flex justify-between items-center mb-8 border-b border-accent/10 pb-4">
+                      {/* Interactive Progress Indicators */}
+                      <div className="flex items-center justify-between mb-10">
                         <span className="font-heading font-bold text-sm text-primary uppercase tracking-widest">
                           {isArabic ? "مخطط المشروع الفاخر" : "Luxury Project Planner"}
                         </span>
-                        <span className="text-xs font-semibold text-charcoal/40">
-                          {isArabic ? `الخطوة ${step} من ٣` : `Step ${step} of 3`}
-                        </span>
+                        <div className="flex gap-2">
+                          {[1, 2, 3].map((i) => (
+                            <div 
+                              key={i} 
+                              className={cn(
+                                "h-1 rounded-full transition-all duration-500",
+                                step >= i ? "bg-primary w-6" : "bg-charcoal/10 w-2"
+                              )}
+                            />
+                          ))}
+                        </div>
                       </div>
 
                       {/* Step Contents */}
-                      <AnimatePresence mode="wait">
-                        {step === 1 && (
-                          <motion.div
-                            key="step1"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="flex flex-col gap-6"
-                          >
-                            <h3 className="font-heading text-lg font-bold text-charcoal uppercase tracking-wider mb-2">
-                              {isArabic ? "١. اختر نوع الخدمة الهندسية المطلوبة" : "1. Select Engineering Domain"}
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {services.map((srv) => (
-                                <button
-                                  type="button"
-                                  key={srv.id}
-                                  onClick={() => setSelectedService(srv.name)}
-                                  className={cn(
-                                    "p-4 border text-left rounded-xl transition-all duration-300 font-heading text-xs uppercase tracking-wider",
-                                    selectedService === srv.name
-                                      ? "border-primary bg-primary/5 text-primary font-bold shadow-sm"
-                                      : "border-accent/10 bg-cream text-charcoal hover:border-primary/30"
-                                  )}
-                                >
-                                  {srv.name}
-                                </button>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
+                      <div className="relative overflow-visible min-h-[220px]">
+                        <AnimatePresence custom={direction} mode="wait">
+                          {step === 1 && (
+                            <motion.div
+                              key="step1"
+                              custom={direction}
+                              variants={stepVariants}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              className="flex flex-col gap-6 w-full absolute"
+                            >
+                              <h3 className="font-heading text-xl font-bold text-charcoal uppercase tracking-wider mb-2">
+                                {isArabic ? "١. نوع الخدمة الهندسية" : "1. Engineering Domain"}
+                              </h3>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {services.map((srv) => (
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    type="button"
+                                    key={srv.id}
+                                    onClick={() => setSelectedService(srv.name)}
+                                    className={cn(
+                                      "p-5 border text-left rounded-2xl transition-all duration-300 font-heading text-xs uppercase tracking-wider",
+                                      selectedService === srv.name
+                                        ? "border-primary bg-primary text-white shadow-lg shadow-primary/20"
+                                        : "border-charcoal/10 bg-cream text-charcoal hover:border-primary/50"
+                                    )}
+                                  >
+                                    {srv.name}
+                                  </motion.button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
 
-                        {step === 2 && (
-                          <motion.div
-                            key="step2"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="flex flex-col gap-6"
-                          >
-                            <h3 className="font-heading text-lg font-bold text-charcoal uppercase tracking-wider mb-2">
-                              {isArabic ? "٢. حدد نطاق وحجم المشروع" : "2. Declare Project Type & Scale"}
-                            </h3>
-                            <div className="grid grid-cols-1 gap-4">
-                              {scales.map((scl) => (
-                                <button
-                                  type="button"
-                                  key={scl.id}
-                                  onClick={() => setProjectScale(scl.name)}
-                                  className={cn(
-                                    "p-4 border text-left rounded-xl transition-all duration-300 font-heading text-xs uppercase tracking-wider",
-                                    projectScale === scl.name
-                                      ? "border-primary bg-primary/5 text-primary font-bold shadow-sm"
-                                      : "border-accent/10 bg-cream text-charcoal hover:border-primary/30"
-                                  )}
-                                >
-                                  {scl.name}
-                                </button>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
+                          {step === 2 && (
+                            <motion.div
+                              key="step2"
+                              custom={direction}
+                              variants={stepVariants}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              className="flex flex-col gap-6 w-full absolute"
+                            >
+                              <h3 className="font-heading text-xl font-bold text-charcoal uppercase tracking-wider mb-2">
+                                {isArabic ? "٢. نطاق وحجم المشروع" : "2. Project Scale"}
+                              </h3>
+                              <div className="grid grid-cols-1 gap-4">
+                                {scales.map((scl) => (
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    type="button"
+                                    key={scl.id}
+                                    onClick={() => setProjectScale(scl.name)}
+                                    className={cn(
+                                      "p-5 border text-left rounded-2xl transition-all duration-300 font-heading text-xs uppercase tracking-wider",
+                                      projectScale === scl.name
+                                        ? "border-primary bg-primary text-white shadow-lg shadow-primary/20"
+                                        : "border-charcoal/10 bg-cream text-charcoal hover:border-primary/50"
+                                    )}
+                                  >
+                                    {scl.name}
+                                  </motion.button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
 
-                        {step === 3 && (
-                          <motion.div
-                            key="step3"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="flex flex-col gap-5"
-                          >
-                            <h3 className="font-heading text-lg font-bold text-charcoal uppercase tracking-wider mb-2">
-                              {isArabic ? "٣. قم بتعبئة بياناتك الشخصية" : "3. Complete Personal Information"}
-                            </h3>
-                            <div className="flex flex-col gap-4">
-                              <input
-                                required
-                                type="text"
-                                placeholder={isArabic ? "الاسم الكريم بالكامل" : "Noble Full Name"}
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-cream border border-accent/20 px-4 py-3 rounded-xl focus:border-primary focus:bg-white outline-none text-charcoal text-sm transition-colors placeholder:text-charcoal/40"
-                              />
-                              <input
-                                required
-                                type="email"
-                                placeholder={isArabic ? "البريد الإلكتروني" : "Email Address"}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-cream border border-accent/20 px-4 py-3 rounded-xl focus:border-primary focus:bg-white outline-none text-charcoal text-sm transition-colors placeholder:text-charcoal/40"
-                              />
-                              <input
-                                type="tel"
-                                placeholder={isArabic ? "رقم الجوال (اختياري)" : "Phone Number (Optional)"}
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                className="w-full bg-cream border border-accent/20 px-4 py-3 rounded-xl focus:border-primary focus:bg-white outline-none text-charcoal text-sm transition-colors placeholder:text-charcoal/40"
-                              />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          {step === 3 && (
+                            <motion.div
+                              key="step3"
+                              custom={direction}
+                              variants={stepVariants}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              className="flex flex-col gap-6 w-full absolute"
+                            >
+                              <h3 className="font-heading text-xl font-bold text-charcoal uppercase tracking-wider mb-2">
+                                {isArabic ? "٣. بيانات التواصل" : "3. Contact Information"}
+                              </h3>
+                              <div className="flex flex-col gap-5">
+                                <div className="relative group">
+                                  <input
+                                    required
+                                    type="text"
+                                    placeholder={isArabic ? "الاسم الكريم بالكامل" : "Full Name"}
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full bg-cream/50 border-b-2 border-charcoal/10 px-4 py-4 focus:border-primary outline-none text-charcoal text-base transition-colors placeholder:text-charcoal/30"
+                                  />
+                                </div>
+                                <div className="relative group">
+                                  <input
+                                    required
+                                    type="email"
+                                    placeholder={isArabic ? "البريد الإلكتروني" : "Email Address"}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-cream/50 border-b-2 border-charcoal/10 px-4 py-4 focus:border-primary outline-none text-charcoal text-base transition-colors placeholder:text-charcoal/30"
+                                  />
+                                </div>
+                                <div className="relative group">
+                                  <input
+                                    type="tel"
+                                    placeholder={isArabic ? "رقم الجوال (اختياري)" : "Phone Number (Optional)"}
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    className="w-full bg-cream/50 border-b-2 border-charcoal/10 px-4 py-4 focus:border-primary outline-none text-charcoal text-base transition-colors placeholder:text-charcoal/30"
+                                  />
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
 
                     {/* Step Navigation Controls */}
-                    <div className="flex justify-between items-center mt-12 pt-6 border-t border-accent/10">
+                    <div className="flex justify-between items-center mt-12 pt-8 border-t border-charcoal/5">
                       {step > 1 ? (
-                        <button
-                          type="button"
-                          onClick={() => setStep((s) => (s - 1) as FormStep)}
-                          className="flex items-center gap-2 border border-accent/20 text-charcoal/60 px-5 py-2 hover:border-accent hover:text-accent transition-colors font-heading font-semibold text-xs tracking-wider uppercase bg-white rounded-lg"
+                        <MagneticButton
+                          onClick={prevStep}
+                          className="flex items-center gap-2 text-charcoal/50 hover:text-charcoal transition-colors font-heading font-bold text-xs tracking-wider uppercase px-4 py-2 z-10"
                         >
-                          <ChevronLeft size={14} />
-                          {isArabic ? "السابق" : "Back"}
-                        </button>
+                          <ChevronLeft size={16} />
+                          {isArabic ? "رجوع" : "Back"}
+                        </MagneticButton>
                       ) : (
                         <div />
                       )}
 
                       {step < 3 ? (
-                        <button
-                          type="button"
+                        <MagneticButton
                           disabled={step === 1 ? !selectedService : !projectScale}
-                          onClick={() => setStep((s) => (s + 1) as FormStep)}
+                          onClick={nextStep}
                           className={cn(
-                            "flex items-center gap-2 px-6 py-2.5 font-heading font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300",
+                            "flex items-center gap-3 px-8 py-4 font-heading font-bold text-sm uppercase tracking-wider rounded-full transition-all duration-300 z-10 relative",
                             (step === 1 ? selectedService : projectScale)
-                              ? "bg-primary text-cream shadow-lg hover:shadow-primary/20 hover:bg-primary/95"
+                              ? "bg-charcoal text-white shadow-xl hover:shadow-2xl hover:bg-black"
                               : "bg-charcoal/5 text-charcoal/30 cursor-not-allowed"
                           )}
                         >
                           {isArabic ? "التالي" : "Next"}
-                          <ChevronRight size={14} />
-                        </button>
+                          <ChevronRight size={16} />
+                        </MagneticButton>
                       ) : (
-                        <button
+                        <MagneticButton
                           type="submit"
                           disabled={!name || !email}
                           className={cn(
-                            "flex items-center gap-2 px-8 py-3.5 font-heading font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300",
+                            "flex items-center gap-3 px-8 py-4 font-heading font-bold text-sm uppercase tracking-wider rounded-full transition-all duration-300 z-10 relative",
                             name && email
-                              ? "bg-primary text-cream border border-primary hover:bg-transparent hover:text-primary shadow-xl shadow-primary/10 cursor-pointer"
-                              : "bg-charcoal/5 text-charcoal/30 cursor-not-allowed border border-transparent"
+                              ? "bg-primary text-white shadow-xl shadow-primary/30 hover:shadow-2xl hover:bg-primary/90 cursor-pointer"
+                              : "bg-charcoal/5 text-charcoal/30 cursor-not-allowed"
                           )}
                         >
-                          {isArabic ? "إرسال الطلب الهيكلي" : "Submit Structural Request"}
-                          <Send size={12} />
-                        </button>
+                          {isArabic ? "إرسال الطلب" : "Submit Request"}
+                          <Send size={16} />
+                        </MagneticButton>
                       )}
                     </div>
                   </form>
                 ) : (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center text-center py-10 min-h-[380px]"
+                    transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                    className="flex flex-col items-center justify-center text-center py-12 min-h-[420px] relative z-10"
                   >
-                    <CheckCircle2 size={56} className="text-primary mb-6 animate-bounce" />
-                    <h3 className="font-heading text-2xl font-bold text-primary mb-3 uppercase tracking-wide">
-                      {isArabic ? "تم استلام طلبك بنجاح" : "Structural Planner Received"}
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    >
+                      <CheckCircle2 size={80} className="text-primary mb-8" />
+                    </motion.div>
+                    
+                    <h3 className="font-heading text-3xl font-bold text-charcoal mb-4 uppercase tracking-wide">
+                      {isArabic ? "تم استلام الطلب" : "Request Received"}
                     </h3>
-                    <p className="text-charcoal/70 max-w-md font-light text-sm sm:text-base mb-8">
+                    <p className="text-charcoal/60 max-w-sm font-light text-base mb-10 leading-relaxed">
                       {isArabic
-                        ? `شكراً لك يا ${name}. لقد قمنا بتسجيل طلبك لخدمات (${selectedService}). للتواصل المباشر والسريع، يمكنك إرسال الطلب فوراً عبر واتساب المكتبي.`
-                        : `Thank you, ${name}. We have registered your request for ${selectedService}. For instantaneous support, you may launch your details directly into our Jubail WhatsApp hub.`}
+                        ? `شكراً لك يا ${name}. لقد قمنا بتسجيل طلبك لخدمات (${selectedService}). للتواصل المباشر والسريع، يمكنك إرسال الطلب فوراً عبر واتساب.`
+                        : `Thank you, ${name}. Your request for ${selectedService} is logged. For immediate support, launch your details directly into our WhatsApp hub.`}
                     </p>
 
-                    <div className="flex flex-col gap-3 w-full max-w-sm">
-                      <a
-                        href={getWhatsAppURL()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-cream font-heading font-semibold text-xs tracking-wider uppercase py-3.5 rounded-xl transition-all duration-300"
+                    <div className="flex flex-col gap-4 w-full max-w-xs">
+                      <MagneticButton
+                        onClick={() => window.open(getWhatsAppURL(), "_blank")}
+                        className="flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white font-heading font-bold text-xs tracking-wider uppercase py-4 rounded-full shadow-lg shadow-emerald-500/20 transition-colors z-10"
                       >
-                        <MessageCircle size={15} />
-                        {isArabic ? "أرسل التفاصيل فوراً عبر واتساب" : "Launch WhatsApp Direct"}
-                      </a>
+                        <MessageCircle size={18} />
+                        {isArabic ? "تواصل واتساب فوراً" : "Launch WhatsApp"}
+                      </MagneticButton>
+                      
                       <button
                         onClick={() => {
                           setIsSubmitted(false);
@@ -348,9 +525,9 @@ Scale: ${projectScale}`;
                           setSelectedService("");
                           setProjectScale("");
                         }}
-                        className="text-xs font-semibold text-charcoal/40 hover:text-primary transition-colors underline"
+                        className="text-xs font-bold text-charcoal/40 hover:text-primary transition-colors underline underline-offset-4 mt-2 z-10 relative"
                       >
-                        {isArabic ? "إنشاء طلب جديد" : "Configure Another Project"}
+                        {isArabic ? "إنشاء طلب جديد" : "Start New Project"}
                       </button>
                     </div>
                   </motion.div>
@@ -358,8 +535,10 @@ Scale: ${projectScale}`;
               </AnimatePresence>
             </div>
           </div>
+          
         </div>
       </div>
     </section>
   );
 }
+

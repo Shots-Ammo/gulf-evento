@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Inter, Tajawal } from "next/font/google";
 import "./globals.css";
+import Noura from '@/components/get_bot';
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -38,6 +39,7 @@ export default function RootLayout({
     >
       <body className="font-sans min-h-full bg-cream text-charcoal flex flex-col">
         {children}
+        <Noura />
       </body>
     </html>
   );

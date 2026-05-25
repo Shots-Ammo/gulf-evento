@@ -32,6 +32,55 @@ pnpm typecheck    # tsc --noEmit
 - Fetch data in Server Components or Route Handlers, not inside client components
 - **Never** store sensitive values in client-side code or `NEXT_PUBLIC_` env vars unless intentionally public
 
+## Design References
+When building new sections, reference the interaction patterns from:
+- Obys Agency (obys.agency)
+- Locomotive (locomotive.ca)  
+- Basic Agency (basicagency.com)
+- Refokus (refokus.com)
+
+Key patterns to borrow:
+- Horizontal scroll sections
+- Clip-path text reveals on scroll
+- Large kinetic typography
+- Image distortion on hover (with GSAP + shader or CSS filter)
+
+## Animation & Visual Stack
+- **GSAP** (GreenSock) + ScrollTrigger — for scroll-driven animations
+- **Framer Motion** — for React component animations
+- **Lenis** — smooth scroll library
+- **Three.js / React Three Fiber** — for WebGL/3D elements
+- **Splitting.js** — for text character/word animations
+- **CSS custom properties** for animation tokens
+
+## Animation Stack 2
+- **GSAP** + ScrollTrigger installed via `pnpm add gsap`
+- Register plugins at the top of every component that uses them
+- All scroll animations use ScrollTrigger — never IntersectionObserver
+- All entrance animations use GSAP timelines — never CSS keyframes
+- SplitText for any text character/word animations
+- Cleanup: always return `() => ctx.revert()` from useEffect
+
+## Visual Quality Standards (Non-Negotiable)
+- Every page section needs a deliberate entrance animation
+- Text reveals use character or word splitting, never fade-in-place
+- Scroll is always smooth (Lenis)
+- Cursor: custom cursor on desktop
+- Hover states are rich — scale, clip-path reveals, magnetic effects
+- NO stock shadcn component defaults — always customize radii, shadows, motion
+- Hero sections must have depth: layered elements, parallax, or WebGL
+- Color palette max 3 colors, used with restraint
+- Spacing is generous — sections breathe
+- Typography is expressive: mix weights, sizes, and cases intentionally
+
+
+## Design & Animation Protocols (Awwwards Level)
+- **Standard UI vs. Marketing:** Use shadcn/ui ONLY for functional components (forms, dashboards, modals). For landing pages and hero sections, write bespoke, highly animated components.
+- **Motion Priority:** Elements should rarely just load statically. Utilize GSAP for staggered reveals (e.g., text clipping, word-by-word reveals) and ScrollTrigger for parallax effects.
+- **Smooth Scrolling:** All public-facing pages must be wrapped in a Lenis smooth-scroll provider context.
+- **Layout Paradigm:** Do not default to simple centered flex containers. Explore asymmetrical layouts, overlapping elements using absolute positioning, and dynamic typography scaling.
+- **Micro-interactions:** Implement custom cursors, magnetic button hover effects, and image reveal distortions where appropriate.
+
 ## Code Conventions
 - Prefer named exports over default exports
 - Use `type` imports: `import type { Foo } from './types'`
@@ -63,6 +112,11 @@ pnpm typecheck    # tsc --noEmit
 - Sometimes uses `fetch` inside client components instead of React Server Components
 - May suggest `any` type under time pressure — always use proper types
 - Occasionally skips Zod validation on API routes — always validate
+- Defaults to Tailwind transitions instead of GSAP — always use GSAP for anything scroll-driven
+- Uses opacity/translate for reveals — prefer clip-path reveals for premium feel
+- Skips custom cursor — always add one for desktop
+- Makes sections full-width with no breathing room — use asymmetric layouts
+- Centers everything — awwwards sites are asymmetric and grid-breaking
 
 ## When Exploring the Codebase
 Fetch what you need using Bash. Start with:

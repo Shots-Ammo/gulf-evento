@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Eye, Shield, Target, ArrowUpRight } from "lucide-react";
@@ -15,7 +15,6 @@ export default function Overview({ isArabic }: OverviewProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const bgTextRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [displayIndex, setDisplayIndex] = useState(0);
 
   const overviewText = isArabic
     ? "مرحباً بكم في شركة جلف إيفينتو للمقاولات العامة، التي تأسست في مدينة الجبيل عام ١٤٣٥ هـ. يتميز فريقنا المتخصص بالتميز في مجموعة واسعة من المشاريع، بدءاً من المباني السكنية الراقية إلى المشاريع والمرافق العامة الكبرى. وبتركيز حاسم على النمو المستقبلي والتطوير المستمر، نحن على استعداد تام لتنفيذ أضخم المشاريع الإنشائية، مدعومين بنخبة من المهندسين والفنيين ذوي المهارات العالية."
@@ -169,11 +168,9 @@ export default function Overview({ isArabic }: OverviewProps) {
         ease: "back.out(2)",
       }, "-=0.3");
 
-      // 3. SYNCHRONIZED CONTENT UPDATE
-      // Update the display index precisely when the gold sweep is covering the content
-      tl.call(() => {
-        setDisplayIndex(activeIndex);
-      }, undefined, 0.5);
+      // 3. Content Crossfade (Happens behind the gold sweep)
+      tl.set(activePanel, { opacity: 0, x: -20 });
+      tl.set(activePanel, { opacity: 1, x: 0 });
 
       // 4. Logo Fade Out
       tl.to(logoOverlay, {
@@ -287,14 +284,14 @@ export default function Overview({ isArabic }: OverviewProps) {
               <div className="active-panel relative z-10 h-full w-full p-12 sm:p-20 flex flex-col justify-center text-cream">
                 <div className="flex items-center gap-6 mb-8">
                   <div className={`w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-primary`}>
-                    {React.createElement(features[displayIndex].icon, { size: 28 })}
+                    {React.createElement(features[activeIndex].icon, { size: 28 })}
                   </div>
                   <h3 className="font-heading text-3xl sm:text-4xl font-bold uppercase tracking-tighter">
-                    {features[displayIndex].title}
+                    {features[activeIndex].title}
                   </h3>
                 </div>
                 <p className="text-cream/70 text-lg sm:text-xl font-light leading-relaxed max-w-lg">
-                  {features[displayIndex].content}
+                  {features[activeIndex].content}
                 </p>
 
                 {/* Subtle architectural line */}
@@ -302,7 +299,12 @@ export default function Overview({ isArabic }: OverviewProps) {
               </div>
             </div>
 
+            {/* Index Indicator (01, 02, 03) */}
+            <div className="absolute -bottom-12 left-0 font-heading text-6xl font-black text-charcoal/10">
+              0{activeIndex + 1}
+            </div>
           </div>
+
         </div>
       </div>
     </section>
