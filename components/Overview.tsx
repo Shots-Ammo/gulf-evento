@@ -170,6 +170,13 @@ export default function Overview({ isArabic }: OverviewProps) {
         ease: "back.out(2)",
       }, "-=0.3");
 
+      // 2b. Logo Rotation: rotate 90 degrees during the overlay
+      tl.to('.logo-rotate-target', {
+        rotation: '+=90',
+        duration: 0.6,
+        ease: 'power4.inOut',
+      }, '-=0.35');
+
       // 3. SYNCHRONIZED CONTENT UPDATE
       // Update the display index precisely when the gold sweep is covering the content
       tl.call(() => {
@@ -275,7 +282,7 @@ export default function Overview({ isArabic }: OverviewProps) {
               {/* Logo Overlay */}
               <div className="logo-transition-overlay absolute inset-0 z-40 flex items-center justify-center opacity-0 scale-75 pointer-events-none">
                 <div className="w-24 h-24 bg-charcoal p-2 rounded-full flex items-center justify-center shadow-xl border-2 border-primary overflow-hidden">
-                  <div className="relative w-16 h-16">
+                  <div className="relative w-16 h-16 logo-rotate-target">
                     <Image
                       src="/gulf_logo.png"
                       alt="Gulf Evento Logo"
