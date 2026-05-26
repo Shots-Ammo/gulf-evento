@@ -167,17 +167,17 @@ export default function Hero({ isArabic }: HeroProps) {
           <div ref={titleRef} className="relative mb-8">
             <h1 className="font-heading text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter text-charcoal leading-[1.1]">
               <span className="block overflow-hidden py-1">
-                <span className="reveal-text block translate-y-0 opacity-0">
-                  {isArabic ? "صناعة التميز في" : "Crafting Excellence"}
+               <span className="reveal-text inline-block tracking-normal translate-y-0 opacity-0 text-3xl font-bold">
+                  {isArabic ? "صناعة التميز في" : "Crafting Excellence In"}
                 </span>
               </span>
               <span className="block overflow-hidden py-1">
-                <span className="reveal-text block text-primary font-extrabold translate-y-0 opacity-0">
+                <span className="reveal-text block whitespace-nowrap text-primary font-extrabold translate-y-0 opacity-0">
                   {isArabic ? "المقاولات العامة" : "General Contracting"}
                 </span>
               </span>
               <span className="block overflow-hidden py-1">
-                <span className="reveal-text block translate-y-0 opacity-0">
+                <span className="reveal-text whitespace-nowrap block translate-y-0 opacity-0">
                   {isArabic ? "والهندسة المعمارية" : "& Architecture"}
                 </span>
               </span>

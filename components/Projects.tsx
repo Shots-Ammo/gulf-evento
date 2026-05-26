@@ -360,7 +360,7 @@ export default function Projects({ isArabic }: ProjectsProps) {
                 <div className="p-4 sm:p-6 flex flex-col flex-1 bg-white">
                   {/* Location label */}
                   <span className="text-[10px] sm:text-[11px] font-heading font-semibold text-[#C9A84C] uppercase tracking-widest block mb-2">
-                    📍 {isArabic ? project.locationAr : project.location}
+                   {isArabic ? project.locationAr : project.location}
                   </span>
                   
                   {/* Title - Now in golden color for emphasis */}
