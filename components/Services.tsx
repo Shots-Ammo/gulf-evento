@@ -350,12 +350,18 @@ export default function Services({ isArabic }: ServicesProps) {
                 {/* Card inner content */}
                 <div className="relative z-10 flex flex-col h-full p-8 sm:p-10 min-h-[300px]">
                   {/* Index label */}
-                  <div className="absolute top-5 right-5 font-heading text-[10px] font-bold uppercase tracking-widest text-white/20 group-hover:text-charcoal/40 transition-colors duration-500">
+                  <div className={`absolute top-5 right-5 font-heading text-[10px] font-bold uppercase tracking-widest transition-colors duration-500 ${
+                    isHovered ? "text-charcoal/40" : "text-white/20 group-hover:text-charcoal/40"
+                  }`}>
                     S–0{service.index + 1}
                   </div>
 
                   {/* Icon */}
-                  <div className="w-14 h-14 rounded-xl border border-white/10 bg-white/5 group-hover:bg-charcoal/20 flex items-center justify-center text-cream group-hover:text-charcoal mb-8 transition-all duration-500 flex-shrink-0">
+                  <div className={`w-14 h-14 rounded-xl border flex items-center justify-center mb-8 transition-all duration-500 flex-shrink-0 ${
+                    isHovered 
+                      ? "border-charcoal/30 bg-charcoal/20 text-charcoal" 
+                      : "border-white/10 bg-white/5 text-cream group-hover:bg-charcoal/20 group-hover:text-charcoal"
+                  }`}>
                     <motion.div
                       animate={{ rotate: isHovered ? 12 : 0, scale: 1 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -365,18 +371,24 @@ export default function Services({ isArabic }: ServicesProps) {
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-heading text-xl sm:text-2xl font-bold text-cream group-hover:text-charcoal transition-colors duration-500 uppercase tracking-tight mb-3 leading-snug">
+                  <h3 className={`font-heading text-xl sm:text-2xl font-bold uppercase tracking-tight mb-3 leading-snug transition-colors duration-500 ${
+                    isHovered ? "text-charcoal" : "text-cream group-hover:text-charcoal"
+                  }`}>
                     {isArabic ? service.titleAr : service.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-cream/55 group-hover:text-charcoal/80 font-light text-sm sm:text-base leading-relaxed mb-8 flex-1 transition-colors duration-500">
+                  <p className={`font-light text-sm sm:text-base leading-relaxed mb-8 flex-1 transition-colors duration-500 ${
+                    isHovered ? "text-charcoal/80" : "text-cream/55 group-hover:text-charcoal/80"
+                  }`}>
                     {isArabic ? service.descAr : service.desc}
                   </p>
 
                   {/* Footer CTA */}
                   <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/10 group-hover:border-charcoal/20 transition-colors duration-500">
-                    <span className="text-[10px] font-heading font-bold text-cream group-hover:text-charcoal uppercase tracking-widest transition-colors duration-500">
+                    <span className={`text-[10px] font-heading font-bold uppercase tracking-widest transition-colors duration-500 ${
+                      isHovered ? "text-charcoal" : "text-cream group-hover:text-charcoal"
+                    }`}>
                       {isArabic ? "التفاصيل" : "View Details"}
                     </span>
                     <motion.div
