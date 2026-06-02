@@ -95,3 +95,61 @@ body {
     box-shadow: 0 0 20px rgba(201, 168, 76, 0.25), 0 4px 20px rgba(0,0,0,0.08) !important;
   }
 }
+
+/* ─────────────────────────────────────────────────
+   Hero Scrollytelling Section
+   ───────────────────────────────────────────────── */
+
+/* Scroll indicator animated line */
+@keyframes scroll-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  50% {
+    transform: translateY(0%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.animate-scroll-line {
+  animation: scroll-line 2s ease-in-out infinite;
+}
+
+/* Hero beat text — GPU-accelerated transitions */
+.hero-beat {
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.hero-beat-title,
+.hero-beat-title-2 {
+  will-change: clip-path, transform;
+  backface-visibility: hidden;
+}
+
+.hero-beat-label {
+  letter-spacing: 0.25em;
+}
+
+/* Canvas rendering — prevent subpixel blurring */
+canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Mobile hero adjustments */
+@media (max-width: 767px) {
+  #home {
+    height: 350vh !important;
+  }
+
+  .hero-beat-title {
+    font-size: clamp(1.5rem, 6vw, 2.5rem) !important;
+  }
+
+  .hero-beat-title-2 {
+    font-size: clamp(1.25rem, 5vw, 2rem) !important;
+  }
+}
