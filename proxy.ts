@@ -1,17 +1,15 @@
 import createMiddleware from 'next-intl/middleware';
+import { NextRequest } from 'next/server';
 
-// 1. Initialize the next-intl handler
 const handleI18nRouting = createMiddleware({
   locales: ['en', 'ar'],
   defaultLocale: 'en'
 });
 
-// 2. Explicitly export the named proxy function for Next.js 16
-export function proxy(request: any) {
+export default function middleware(request: NextRequest) {
   return handleI18nRouting(request);
 }
 
 export const config = {
-  // Matches all routes except api, static files, and vercel internals
   matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
 };
